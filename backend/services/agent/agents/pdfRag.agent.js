@@ -7,6 +7,7 @@ import { HumanMessage, SystemMessage } from "@langchain/core/messages"
 import { deductCredits } from "../utils/deductCredits.js"
 import { checkAgentLimit } from "../config/agentLimit.js"
 import redis from "../../../shared/redis/redis.js"
+import PdfContext from "../models/pdfContext.model.js"
 
 const pdfContextKey = (state) => `pdf-context:${state.userId}:${state.conversationId}`
 export const pdfRag=async (state)=>{
@@ -32,13 +33,45 @@ export const pdfRag=async (state)=>{
           chunkOverlap:200
         })
         docs=await spilliter.createDocuments([text])
-        await redis.set(pdfContextKey(state), JSON.stringify(docs), "EX", 3600)
+        await PdfContext.findOneAndUpdate(
+          { userId: state.userId, conversationId: state.conversationId },
+          {
+            userId: state.userId,
+            conversationId: state.conversationId,
+            sourceName: state.file.originalname,
+            chunks: docs,
+            expiresAt: new Date(Date.now() + 3600 * 1000)
+          },
+          { upsert: true, new: true, setDefaultsOnInsert: true }
+        )
+        try {
+          await redis.set(pdfContextKey(state), "1", "EX", 3600)
+        } catch (cacheError) {
+          console.error("pdf context cache unavailable; MongoDB remains the source of truth", cacheError)
+        }
       } else {
-        const savedContext=await redis.get(pdfContextKey(state))
-        if (!savedContext) {
+        let cacheHit=false
+        try {
+          cacheHit=Boolean(await redis.get(pdfContextKey(state)))
+        } catch (cacheError) {
+          console.error("pdf context cache read failed; using MongoDB", cacheError)
+        }
+        const storedContext=await PdfContext.findOne({
+          userId: state.userId,
+          conversationId: state.conversationId,
+          expiresAt: { $gt: new Date() }
+        }).lean()
+        if (!storedContext) {
           throw new Error("No PDF is attached to this conversation. Upload a PDF first.")
         }
-        docs=JSON.parse(savedContext)
+        docs=storedContext.chunks
+        if (!cacheHit) {
+          try {
+            await redis.set(pdfContextKey(state), "1", "EX", 3600)
+          } catch (cacheError) {
+            console.error("pdf context marker refresh failed", cacheError)
+          }
+        }
       }
 
       let relevantDocs

@@ -1,5 +1,6 @@
 import { getModel } from "../config/llmModels.js"
 import redis from "../../../shared/redis/redis.js"
+import PdfContext from "../models/pdfContext.model.js"
 
 const pdfContextKey = (state) => `pdf-context:${state.userId}:${state.conversationId}`
 
@@ -28,7 +29,13 @@ export const router = async (state) => {
   }
 
   try {
-    if (state.conversationId && await redis.exists(pdfContextKey(state))) {
+    const redisHasContext = state.conversationId && await redis.exists(pdfContextKey(state))
+    const mongoHasContext = state.conversationId && await PdfContext.exists({
+      userId: state.userId,
+      conversationId: state.conversationId,
+      expiresAt: { $gt: new Date() }
+    })
+    if (redisHasContext || mongoHasContext) {
       return {
         ...state,
         agent: "pdfRag"
