@@ -3,13 +3,14 @@ import redis from "../../../shared/redis/redis.js"
 import PdfContext from "../models/pdfContext.model.js"
 
 const pdfContextKey = (state) => `pdf-context:${state.userId}:${state.conversationId}`
+const evaluationRequest = /score|rate|evaluat|review|analys|summari|extract|compare|improv|rewrit|recommend|optimi|assess|critic|tailor|match/i
 
 export const router = async (state) => {
   if (state.file) {
     if (state.file.mimetype === "application/pdf") {
     return {
       ...state,
-      agent:"pdfRag"
+      agent: evaluationRequest.test(state.prompt) ? "pdfEvaluation" : "pdfRag"
     }
     }
 
@@ -36,7 +37,7 @@ export const router = async (state) => {
     if (redisHasContext || mongoHasContext) {
       return {
         ...state,
-        agent: "pdfRag"
+        agent: evaluationRequest.test(state.prompt) ? "pdfEvaluation" : "pdfRag"
       }
     }
   } catch (error) {
