@@ -28,14 +28,27 @@ export const pdfRag=async (state)=>{
       })
 
       const docs=await spilliter.createDocuments([text])
-      const collectionName=`pdf-${Date.now()}`;
-      const store=await vectorStore(docs,collectionName)
-
-      const relevantDocs=await store.similaritySearch(state.prompt,5)
+      let relevantDocs
+      try {
+        const collectionName=`pdf-${Date.now()}`
+        const store=await vectorStore(docs,collectionName)
+        relevantDocs=await store.similaritySearch(state.prompt,5)
+      } catch (retrievalError) {
+        console.error("pdf vector retrieval failed; using local text retrieval", retrievalError)
+        relevantDocs=docs
+          .map((doc) => ({
+            doc,
+            score: state.prompt.toLowerCase().split(/\W+/).filter(Boolean)
+              .reduce((total, term) => total + (doc.pageContent.toLowerCase().includes(term) ? 1 : 0), 0)
+          }))
+          .sort((left, right) => right.score - left.score)
+          .slice(0,5)
+          .map(({doc}) => doc)
+      }
       
       const context=relevantDocs.map(d=>d.pageContent).join("\n\n")
       
-      const llm=await getModel("pdf-rag")
+      let llm=await getModel("pdf-rag")
 
        const messages=[
         new SystemMessage(`You are Hershey PDF Assistant.
@@ -60,7 +73,14 @@ new HumanMessage(`
        ]
 
 
-      const response=await llm.invoke(messages)
+      let response
+      try {
+        response=await llm.invoke(messages)
+      } catch (modelError) {
+        console.error("pdf Gemini generation failed; trying Groq", modelError)
+        llm=await getModel("chat")
+        response=await llm.invoke(messages)
+      }
       await deductCredits(state.userId,"pdf")
       console.log(response)
       return {
@@ -72,9 +92,9 @@ new HumanMessage(`
 
    } catch (error) {
           console.error("pdf analysis failed", error)
-         return {
+          return {
             ...state,
-            aiResponse:error?.data?.message || "failed to analyze pdf"
+            aiResponse:error?.data?.message || `failed to analyze pdf: ${error.message}`
         }
    }finally{
          if (pdf) await pdf.destroy().catch(() => {})
