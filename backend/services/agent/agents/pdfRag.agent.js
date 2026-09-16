@@ -1,22 +1,26 @@
-import fs, { stat } from "fs"
+import fs from "fs"
 import {PDFParse} from "pdf-parse"
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters"
 import { vectorStore } from "../config/vectorDb.js"
-import { embeddings } from "../config/embeddings.js"
 import { getModel } from "../config/llmModels.js"
 import { HumanMessage, SystemMessage } from "@langchain/core/messages"
 import { deductCredits } from "../utils/deductCredits.js"
 import { checkAgentLimit } from "../config/agentLimit.js"
 export const pdfRag=async (state)=>{
+  let pdf
    try {
     await checkAgentLimit(state.userId,"pdf")
       const buffer=fs.readFileSync(state.file.path)
-      const pdf=new PDFParse({
+      pdf=new PDFParse({
         data:buffer
       })
 
       const result=await pdf.getText()
-      const text=result.text
+      const text=result.text?.trim()
+
+      if (!text) {
+        throw new Error("The uploaded PDF does not contain extractable text.")
+      }
 
       const spilliter=new RecursiveCharacterTextSplitter({
         chunkSize:1000,
@@ -27,26 +31,7 @@ export const pdfRag=async (state)=>{
       const collectionName=`pdf-${Date.now()}`;
       const store=await vectorStore(docs,collectionName)
 
-      // similaritySearch() (LangChain's default helper) doesn't expose Qdrant's
-      // per-query quantization params, so we query the underlying client directly
-      // to get the Hamming-distance-accelerated search enabled by the binary
-      // quantization set up in vectorDb.js. rescore + oversampling re-rank the
-      // preselected candidates against the original float vectors, keeping
-      // answer quality the same as before while the initial candidate search
-      // itself runs much faster.
-      const queryVector = await embeddings.embedQuery(state.prompt)
-      const searchResult = await store.client.query(collectionName, {
-        query: queryVector,
-        limit: 5,
-        with_payload: true,
-        params: {
-          quantization: {
-            rescore: true,
-            oversampling: 2.0
-          }
-        }
-      })
-      const relevantDocs = searchResult.points.map(p => ({ pageContent: p.payload.content }))
+      const relevantDocs=await store.similaritySearch(state.prompt,5)
       
       const context=relevantDocs.map(d=>d.pageContent).join("\n\n")
       
@@ -86,13 +71,16 @@ new HumanMessage(`
 
 
    } catch (error) {
-    console.log(error)
+          console.error("pdf analysis failed", error)
          return {
             ...state,
             aiResponse:error?.data?.message || "failed to analyze pdf"
         }
    }finally{
-         fs.unlinkSync(state.file.path)
+         if (pdf) await pdf.destroy().catch(() => {})
+         if (state.file?.path && fs.existsSync(state.file.path)) {
+           fs.unlinkSync(state.file.path)
+         }
    }
 
 
