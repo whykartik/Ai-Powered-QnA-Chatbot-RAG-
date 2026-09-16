@@ -1,4 +1,7 @@
 import { getModel } from "../config/llmModels.js"
+import redis from "../../../shared/redis/redis.js"
+
+const pdfContextKey = (state) => `pdf-context:${state.userId}:${state.conversationId}`
 
 export const router = async (state) => {
   if (state.file) {
@@ -22,6 +25,17 @@ export const router = async (state) => {
       ...state,
       agent: state.agent
     }
+  }
+
+  try {
+    if (state.conversationId && await redis.exists(pdfContextKey(state))) {
+      return {
+        ...state,
+        agent: "pdfRag"
+      }
+    }
+  } catch (error) {
+    console.error("pdf context lookup failed", error)
   }
 
   
