@@ -69,6 +69,7 @@ function ChatInput() {
 
 
   const handleSendMessage = async () => {
+    if (!value.trim() || isLoading) return
     dispatch(setIsLoading(true))
     let conversation = selectedConversation
     if (!conversation) {
@@ -235,6 +236,12 @@ function ChatInput() {
         <textarea
           placeholder='Ask Anything...'
           onChange={(e) => setValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault()
+              handleSendMessage()
+            }
+          }}
           value={value}
           className="w-full bg-transparent outline-none resize-none text-[14px] text-slate-200 placeholder:text-slate-600 leading-relaxed [scrollbar-width:none] [&::-webkit-scrollbar]:hidden disabled:opacity-50"
           rows={3}

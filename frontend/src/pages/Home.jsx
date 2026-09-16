@@ -36,7 +36,7 @@ function Home() {
         <div className='h-screen  flex bg-[#0d0f14] text-white overflow-hidden'>
 
     {userData && <>
-    <button onClick={() => setRagOpen(true)} className='fixed bottom-5 right-5 z-30 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-medium shadow-lg'>Artifact Q&A</button>
+    <button onClick={() => setRagOpen(true)} className='fixed top-4 right-5 z-30 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-medium shadow-lg'>Artifact Q&A</button>
     {ragOpen && <div className='fixed inset-y-4 right-4 z-40 w-[min(92vw,440px)] overflow-hidden rounded-xl border border-white/[0.1] shadow-2xl'><RagChat /></div>}
     </>}
 
