@@ -29,6 +29,7 @@ export const agent=async (req,res,next) => {
         })
        
     } catch (error) {
+         console.error("agent request failed", error.response?.data || error.message)
        next(error)
     }
 }

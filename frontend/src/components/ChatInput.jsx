@@ -74,6 +74,10 @@ function ChatInput() {
     if (!conversation) {
       dispatch(setMessages([]))
       const conv = await createConversation()
+      if (!conv) {
+        dispatch(setIsLoading(false))
+        return
+      }
       dispatch(setSelectedConversation(conv))
 
       dispatch(addConversation(conv))
@@ -102,8 +106,9 @@ function ChatInput() {
     const data = await sendMessage(formData)
     dispatch(setIsLoading(false))
     setSelectedFile(null)
+    if (!data) return
     dispatch(setArtifacts(data.artifacts || []))
-    dispatch(addMessage({ role: "assistant", content: data?.answer, images: data?.images }))
+    dispatch(addMessage({ role: "assistant", content: data.answer, images: data.images }))
     console.log(data)
   }
 
