@@ -1,7 +1,7 @@
 import fs from "fs"
 import {PDFParse} from "pdf-parse"
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters"
-import { vectorStore } from "../config/vectorDb.js"
+import { deleteVectorStore, existingVectorStore, pdfCollectionName, vectorStore } from "../config/vectorDb.js"
 import { getModel } from "../config/llmModels.js"
 import { HumanMessage, SystemMessage } from "@langchain/core/messages"
 import { deductCredits } from "../utils/deductCredits.js"
@@ -15,7 +15,15 @@ export const pdfRag=async (state)=>{
    try {
     await checkAgentLimit(state.userId,"pdf")
       let docs
+      let collectionName=pdfCollectionName(state.userId,state.conversationId)
       if (state.file) {
+        const previousContext=await PdfContext.findOne({
+          userId: state.userId,
+          conversationId: state.conversationId
+        }).lean()
+        if (previousContext?.collectionName && previousContext.collectionName !== collectionName) {
+          await deleteVectorStore(previousContext.collectionName)
+        }
         const buffer=fs.readFileSync(state.file.path)
         pdf=new PDFParse({
           data:buffer
@@ -39,6 +47,7 @@ export const pdfRag=async (state)=>{
             userId: state.userId,
             conversationId: state.conversationId,
             sourceName: state.file.originalname,
+            collectionName,
             chunks: docs,
             expiresAt: new Date(Date.now() + 3600 * 1000)
           },
@@ -76,9 +85,9 @@ export const pdfRag=async (state)=>{
 
       let relevantDocs
       try {
-        if (!state.file) throw new Error("Use saved PDF context")
-        const collectionName=`pdf-${Date.now()}`
-        const store=await vectorStore(docs,collectionName)
+        const store = state.file
+          ? await vectorStore(docs,collectionName)
+          : await existingVectorStore(collectionName)
         relevantDocs=await store.similaritySearch(state.prompt,5)
       } catch (retrievalError) {
         console.error("pdf vector retrieval failed; using local text retrieval", retrievalError)

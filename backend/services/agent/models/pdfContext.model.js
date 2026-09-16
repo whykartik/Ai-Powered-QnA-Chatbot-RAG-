@@ -4,6 +4,7 @@ const pdfContextSchema = new mongoose.Schema({
   userId: { type: String, required: true, index: true },
   conversationId: { type: String, required: true, index: true },
   sourceName: { type: String, required: true },
+  collectionName: { type: String, required: true },
   chunks: [{
     pageContent: { type: String, required: true },
     metadata: { type: mongoose.Schema.Types.Mixed, default: {} }

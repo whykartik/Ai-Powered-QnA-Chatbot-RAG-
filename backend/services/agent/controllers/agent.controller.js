@@ -2,6 +2,24 @@ import axios from "axios"
 import { graph } from "../graph/graph.js"
 import { addMessage } from "../config/memory.js"
 import redis from "../../../shared/redis/redis.js"
+import PdfContext from "../models/pdfContext.model.js"
+import { deleteVectorStore } from "../config/vectorDb.js"
+
+export const cleanupPdfContext=async (req,res,next)=>{
+    try {
+        const userId=req.headers["x-user-id"]
+        const conversationId=req.params.conversationId
+        const context=await PdfContext.findOne({userId,conversationId}).lean()
+        if(context?.collectionName){
+            await deleteVectorStore(context.collectionName)
+        }
+        await PdfContext.deleteOne({userId,conversationId})
+        await redis.del(`pdf-context:${userId}:${conversationId}`).catch(() => {})
+        return res.status(204).send()
+    } catch (error) {
+        next(error)
+    }
+}
 
 
 export const agent=async (req,res,next) => {
