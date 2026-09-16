@@ -21,15 +21,13 @@ export const router = async (state) => {
     }
   }
 
-  if (state.agent && state.agent !== "auto") {
-    return {
-      ...state,
-      agent: state.agent
-    }
-  }
-
   try {
-    const redisHasContext = state.conversationId && await redis.exists(pdfContextKey(state))
+    let redisHasContext = false
+    try {
+      redisHasContext = Boolean(state.conversationId && await redis.exists(pdfContextKey(state)))
+    } catch (error) {
+      console.error("pdf Redis context lookup failed; checking MongoDB", error)
+    }
     const mongoHasContext = state.conversationId && await PdfContext.exists({
       userId: state.userId,
       conversationId: state.conversationId,
@@ -43,6 +41,13 @@ export const router = async (state) => {
     }
   } catch (error) {
     console.error("pdf context lookup failed", error)
+  }
+
+  if (state.agent && state.agent !== "auto") {
+    return {
+      ...state,
+      agent: state.agent
+    }
   }
 
   

@@ -10,6 +10,7 @@ import redis from "../../../shared/redis/redis.js"
 import PdfContext from "../models/pdfContext.model.js"
 
 const pdfContextKey = (state) => `pdf-context:${state.userId}:${state.conversationId}`
+const isDocumentOperation = (prompt) => /ats|score|rate|evaluate|review|analy[sz]e|summari[sz]e|extract|compare|improve|rewrite|recommend/i.test(prompt)
 export const pdfRag=async (state)=>{
   let pdf
    try {
@@ -85,10 +86,14 @@ export const pdfRag=async (state)=>{
 
       let relevantDocs
       try {
-        const store = state.file
-          ? await vectorStore(docs,collectionName)
-          : await existingVectorStore(collectionName)
-        relevantDocs=await store.similaritySearch(state.prompt,5)
+        if (isDocumentOperation(state.prompt)) {
+          relevantDocs=docs
+        } else {
+          const store = state.file
+            ? await vectorStore(docs,collectionName)
+            : await existingVectorStore(collectionName)
+          relevantDocs=await store.similaritySearch(state.prompt,5)
+        }
       } catch (retrievalError) {
         console.error("pdf vector retrieval failed; using local text retrieval", retrievalError)
         relevantDocs=docs
@@ -111,11 +116,15 @@ export const pdfRag=async (state)=>{
 
 Rules:
 
-- Answer ONLY from the uploaded PDF.
+      - Use only the uploaded PDF as your source.
 
 - Never make up information.
 
-- If the answer is not present in the PDF, reply:
+      - For factual questions, answer only information explicitly supported by the PDF.
+
+      - For operations such as ATS scoring, evaluation, summarization, extraction, comparison, review, or recommendations, perform the requested analysis using the PDF content. Clearly label estimates or derived results and explain the criteria used.
+
+      - If the requested fact or analysis cannot be supported by the PDF, reply:
 
 "I couldn't find this information in the uploaded PDF."
 
