@@ -24,6 +24,9 @@ export const getModel=async (agent)=>{
             return groq;
         case "search" :    
            return groq;
+          case "pdf":
+          case "pdf-rag":
+                return gemini;
         case "coding": 
            return openrouter; 
         case "imageAnalyzer": 
