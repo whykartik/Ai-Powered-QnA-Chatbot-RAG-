@@ -1,5 +1,6 @@
 import { signInWithPopup } from 'firebase/auth'
 import React from 'react'
+import { useState } from 'react'
 import { auth, googleProvider } from '../../utils/firebase'
 import api from '../../utils/axios'
 import { FcGoogle } from "react-icons/fc";
@@ -8,10 +9,12 @@ import { setUserdata } from '../redux/userSlice';
 import SideBar from '../components/SideBar';
 import ChatArea from '../components/ChatArea';
 import Artifact from '../components/Artifact';
+import RagChat from '../components/RagChat';
 
 function Home() {
     const {userData}=useSelector(state=>state.user)
     const dispatch=useDispatch()
+    const [ragOpen, setRagOpen] = useState(false)
     const handleLogin = async (token) => {
         try {
             const { data } = await api.post("/api/auth/login", { token })
@@ -31,6 +34,11 @@ function Home() {
     }
     return (
         <div className='h-screen  flex bg-[#0d0f14] text-white overflow-hidden'>
+
+    {userData && <>
+    <button onClick={() => setRagOpen(true)} className='fixed bottom-5 right-5 z-30 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-medium shadow-lg'>Artifact Q&A</button>
+    {ragOpen && <div className='fixed inset-y-4 right-4 z-40 w-[min(92vw,440px)] overflow-hidden rounded-xl border border-white/[0.1] shadow-2xl'><RagChat /></div>}
+    </>}
 
 <SideBar/>
 <ChatArea/>

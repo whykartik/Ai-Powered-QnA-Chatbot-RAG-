@@ -1,4 +1,5 @@
-import { answerQuery, ingestArtifact, listArtifacts, removeArtifact } from "./service.js"
+import { ingestArtifact, listArtifacts, removeArtifact } from "./service.js"
+import { answerQuery, streamAnswer } from "./generation.js"
 
 const userId = (req) => req.headers["x-user-id"]
 
@@ -23,8 +24,29 @@ export const deleteArtifact = async (req, res, next) => {
 
 export const queryArtifacts = async (req, res, next) => {
   try {
-    const { query, topK, artifactId } = req.body
+    const { query, topK, filters } = req.body
     if (!query?.trim()) return res.status(400).json({ message: "query is required" })
-    return res.json(await answerQuery({ userId: userId(req), query: query.trim(), topK, artifactId }))
+    return res.json(await answerQuery({ userId: userId(req), query: query.trim(), topK, filters }))
   } catch (error) { next(error) }
+}
+
+export const streamQueryArtifacts = async (req, res, next) => {
+  try {
+    const { query, topK, filters } = req.body
+    if (!query?.trim()) return res.status(400).json({ message: "query is required" })
+    res.status(200)
+    res.set({ "Content-Type": "text/event-stream", "Cache-Control": "no-cache", Connection: "keep-alive" })
+    res.flushHeaders()
+    const result = await streamAnswer({
+      userId: userId(req), query: query.trim(), topK, filters,
+      onToken: async (token) => res.write(`event: token\ndata: ${JSON.stringify({ token })}\n\n`)
+    })
+    res.write(`event: sources\ndata: ${JSON.stringify({ sources: result.sources, diagnostics: result.diagnostics })}\n\n`)
+    res.write("event: done\ndata: {}\n\n")
+    return res.end()
+  } catch (error) {
+    if (!res.headersSent) return next(error)
+    res.write(`event: error\ndata: ${JSON.stringify({ message: error.message })}\n\n`)
+    return res.end()
+  }
 }

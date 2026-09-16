@@ -6,6 +6,7 @@ const artifactSchema = new mongoose.Schema({
   originalName: { type: String, required: true },
   artifactType: { type: String, required: true },
   chunkCount: { type: Number, default: 0 },
+  embeddingStats: { type: mongoose.Schema.Types.Mixed, default: {} },
   uploadedAt: { type: Date, default: Date.now },
   metadata: { type: mongoose.Schema.Types.Mixed, default: {} }
 }, { timestamps: true })

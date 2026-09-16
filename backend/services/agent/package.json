@@ -5,8 +5,9 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon index.js",
-    "start":"node index.js",
-    "test":"node --test rag/tests/*.test.js"
+    "start": "node index.js",
+    "test": "node --test rag/tests/*.test.js",
+    "rag:eval": "node rag/eval.js"
   },
   "keywords": [],
   "author": "",
@@ -29,6 +30,7 @@
     "csv-parse": "^7.0.2",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "faiss-node": "^0.5.1",
     "ioredis": "^5.11.1",
     "mongoose": "^9.7.3",
     "multer": "^2.2.0",
