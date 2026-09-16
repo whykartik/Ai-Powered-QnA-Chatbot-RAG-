@@ -70,6 +70,8 @@ function ChatInput() {
 
   const handleSendMessage = async () => {
     if (!value.trim() || isLoading) return
+    const prompt = value.trim()
+    const file = selectedFile
     dispatch(setIsLoading(true))
     let conversation = selectedConversation
     if (!conversation) {
@@ -86,31 +88,28 @@ function ChatInput() {
     }
 
     if (conversation.title == "New Chat") {
-      await updateConversation({ id: conversation?._id, title: value.trim() })
-      dispatch(setConvTitle({ conversationId: conversation?._id, title: value.slice(0, 40) }))
+      const title = prompt.slice(0, 40)
+      dispatch(setConvTitle({ conversationId: conversation?._id, title }))
+      updateConversation({ id: conversation?._id, title }).catch(() => {})
     }
 
-
-    console.log(selectedFile)
     const formData = new FormData()
-    formData.append("prompt", value.trim())
+    formData.append("prompt", prompt)
     formData.append("conversationId", conversation?._id)
     formData.append("agent", selectedAgent.toLowerCase())
-    if (selectedFile) {
-      formData.append("file", selectedFile)
+    if (file) {
+      formData.append("file", file)
     }
 
 
-
-    dispatch(addMessage({ role: "user", content: value.trim() }))
+    dispatch(addMessage({ role: "user", content: prompt }))
     setValue("")
+    setSelectedFile(null)
     const data = await sendMessage(formData)
     dispatch(setIsLoading(false))
-    setSelectedFile(null)
     if (!data) return
     dispatch(setArtifacts(data.artifacts || []))
     dispatch(addMessage({ role: "assistant", content: data.answer, images: data.images }))
-    console.log(data)
   }
 
   const agents = [
