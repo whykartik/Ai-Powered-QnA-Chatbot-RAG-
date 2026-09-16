@@ -10,7 +10,8 @@ export const router = async (state) => {
     if (state.file.mimetype === "application/pdf") {
     return {
       ...state,
-      agent: evaluationRequest.test(state.prompt) ? "pdfEvaluation" : "pdfRag"
+      agent: "pdfRag",
+      pdfOperation: evaluationRequest.test(state.prompt)
     }
     }
 
@@ -37,7 +38,8 @@ export const router = async (state) => {
     if (redisHasContext || mongoHasContext) {
       return {
         ...state,
-        agent: evaluationRequest.test(state.prompt) ? "pdfEvaluation" : "pdfRag"
+        agent: evaluationRequest.test(state.prompt) ? "pdfEvaluation" : "pdfRag",
+        pdfOperation: evaluationRequest.test(state.prompt)
       }
     }
   } catch (error) {

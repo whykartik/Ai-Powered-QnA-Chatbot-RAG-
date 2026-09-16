@@ -12,6 +12,16 @@ import { deleteVectorStore, pdfCollectionName, vectorStore } from "../config/vec
 const contextKey = (state) => `pdf-context:${state.userId}:${state.conversationId}`
 
 const loadDocuments = async (state) => {
+  if (state.pdfIndexed) {
+    const context = await PdfContext.findOne({
+      userId: state.userId,
+      conversationId: state.conversationId,
+      expiresAt: { $gt: new Date() }
+    }).lean()
+    if (!context) throw new Error("Indexed PDF context was not found.")
+    return context.chunks
+  }
+
   if (state.file) {
     const parser = new PDFParse({ data: fs.readFileSync(state.file.path) })
     try {

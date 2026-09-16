@@ -60,6 +60,11 @@ workflow.addConditionalEdges("router",(state)=>{
    imageAnalyzer :"imageAnalyzer"
 })
 
+workflow.addConditionalEdges("pdfRag",(state)=>state.pdfOperation ? "pdfEvaluation" : "__end__", {
+   pdfEvaluation:"pdfEvaluation",
+   __end__:"__end__"
+})
+
 
 workflow.addEdge("search","chat")
 workflow.addEdge("chat","__end__")
@@ -67,7 +72,6 @@ workflow.addEdge("coding","__end__")
 workflow.addEdge("pdf","__end__")
 workflow.addEdge("ppt","__end__")
 workflow.addEdge("vision","__end__")
-workflow.addEdge("pdfRag","__end__")
 workflow.addEdge("pdfEvaluation","__end__")
 workflow.addEdge("imageAnalyzer","__end__")
 

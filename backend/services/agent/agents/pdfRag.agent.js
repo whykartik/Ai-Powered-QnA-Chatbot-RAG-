@@ -59,6 +59,14 @@ export const pdfRag=async (state)=>{
         } catch (cacheError) {
           console.error("pdf context cache unavailable; MongoDB remains the source of truth", cacheError)
         }
+        await vectorStore(docs, collectionName)
+        if (state.pdfOperation) {
+          return {
+            ...state,
+            agent: "pdfEvaluation",
+            pdfIndexed: true
+          }
+        }
       } else {
         let cacheHit=false
         try {
@@ -86,15 +94,13 @@ export const pdfRag=async (state)=>{
 
       let relevantDocs
       try {
+        const store = state.file
+          ? await existingVectorStore(collectionName)
+          : await existingVectorStore(collectionName)
         const completeContext = docs.map((doc) => doc.pageContent).join("\n\n")
-        if (completeContext.length <= maxContextCharacters) {
-          relevantDocs=docs
-        } else {
-          const store = state.file
-            ? await vectorStore(docs,collectionName)
-            : await existingVectorStore(collectionName)
-          relevantDocs=await store.similaritySearch(state.prompt,5)
-        }
+        relevantDocs = completeContext.length <= maxContextCharacters
+          ? docs
+          : await store.similaritySearch(state.prompt,5)
       } catch (retrievalError) {
         console.error("pdf vector retrieval failed; using local text retrieval", retrievalError)
         relevantDocs=docs
