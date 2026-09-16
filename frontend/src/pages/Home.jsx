@@ -1,6 +1,7 @@
 import { signInWithPopup } from 'firebase/auth'
 import React from 'react'
 import { useState } from 'react'
+import { X } from 'lucide-react'
 import { auth, googleProvider } from '../../utils/firebase'
 import api from '../../utils/axios'
 import { FcGoogle } from "react-icons/fc";
@@ -33,11 +34,16 @@ function Home() {
         console.log(data)
     }
     return (
-        <div className='h-screen  flex bg-[#0d0f14] text-white overflow-hidden'>
+        <div className='h-[100dvh] min-h-0 flex bg-[#0d0f14] text-white overflow-hidden'>
 
     {userData && <>
-    <button onClick={() => setRagOpen(true)} className='fixed top-4 right-5 z-30 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-medium shadow-lg'>Artifact Q&A</button>
-    {ragOpen && <div className='fixed inset-y-4 right-4 z-40 w-[min(92vw,440px)] overflow-hidden rounded-xl border border-white/[0.1] shadow-2xl'><RagChat /></div>}
+    <button onClick={() => setRagOpen(true)} className='fixed top-3 right-3 z-30 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-medium shadow-lg sm:right-5 sm:top-4'>Artifact Q&A</button>
+    {ragOpen && <div className='fixed inset-x-2 bottom-2 top-14 z-40 overflow-hidden rounded-xl border border-white/[0.1] shadow-2xl sm:inset-y-4 sm:left-auto sm:right-4 sm:w-[min(92vw,440px)]'>
+        <button aria-label='Close Artifact Q&A' onClick={() => setRagOpen(false)} className='absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-lg bg-black/30 text-slate-300 hover:bg-black/50'>
+            <X size={16} />
+        </button>
+        <RagChat />
+    </div>}
     </>}
 
 <SideBar/>

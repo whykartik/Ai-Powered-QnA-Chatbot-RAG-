@@ -48,9 +48,9 @@ export default function RagChat() {
   }
 
   return (
-    <section className="flex h-full flex-col gap-4 bg-[#0d0f14] p-5 text-slate-100">
+    <section className="flex h-full min-h-0 flex-col gap-3 overflow-hidden bg-[#0d0f14] p-3 text-slate-100 sm:gap-4 sm:p-5">
       <div>
-        <h2 className="text-lg font-semibold">Artifact Q&A</h2>
+        <h2 className="pr-10 text-lg font-semibold">Artifact Q&A</h2>
         <p className="text-xs text-slate-500">Ask questions across your uploaded documents.</p>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto whitespace-pre-wrap rounded-xl border border-white/[0.08] bg-white/[0.03] p-4 text-sm leading-6">
