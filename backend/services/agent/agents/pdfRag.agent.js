@@ -10,7 +10,7 @@ import redis from "../../../shared/redis/redis.js"
 import PdfContext from "../models/pdfContext.model.js"
 
 const pdfContextKey = (state) => `pdf-context:${state.userId}:${state.conversationId}`
-const isDocumentOperation = (prompt) => /ats|score|rate|evaluate|review|analy[sz]e|summari[sz]e|extract|compare|improve|rewrite|recommend/i.test(prompt)
+const maxContextCharacters = 30000
 export const pdfRag=async (state)=>{
   let pdf
    try {
@@ -86,7 +86,8 @@ export const pdfRag=async (state)=>{
 
       let relevantDocs
       try {
-        if (isDocumentOperation(state.prompt)) {
+        const completeContext = docs.map((doc) => doc.pageContent).join("\n\n")
+        if (completeContext.length <= maxContextCharacters) {
           relevantDocs=docs
         } else {
           const store = state.file
@@ -112,19 +113,19 @@ export const pdfRag=async (state)=>{
       let llm=await getModel("pdf-rag")
 
        const messages=[
-        new SystemMessage(`You are Hershey PDF Assistant.
+          new SystemMessage(`You are Hershey PDF Assistant.
 
 Rules:
 
-      - Use only the uploaded PDF as your source.
+      - Use the uploaded PDF as the source of truth.
 
 - Never make up information.
 
-      - For factual questions, answer only information explicitly supported by the PDF.
+      - Understand the user's requested task and perform it when it can be grounded in the PDF. This may include answering questions, summarizing, extracting structured information, calculating or estimating scores, reviewing, rewriting, comparing, transforming, generating recommendations, or any other reasonable operation requested by the user.
 
-      - For operations such as ATS scoring, evaluation, summarization, extraction, comparison, review, or recommendations, perform the requested analysis using the PDF content. Clearly label estimates or derived results and explain the criteria used.
+      - For calculations, evaluations, or derived results, clearly label estimates and explain the criteria or reasoning used.
 
-      - If the requested fact or analysis cannot be supported by the PDF, reply:
+      - If the requested task requires information that is not present in the PDF, say what is missing instead of inventing it.
 
 "I couldn't find this information in the uploaded PDF."
 
