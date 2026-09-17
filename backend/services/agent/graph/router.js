@@ -6,6 +6,8 @@ const pdfContextKey = (state) => `pdf-context:${state.userId}:${state.conversati
 const evaluationRequest = /score|rate|evaluat|review|analys|summari|extract|compare|improv|rewrit|recommend|optimi|assess|critic|tailor|match/i
 
 export const router = async (state) => {
+  const promptText = (state.prompt || "").toLowerCase()
+
   if (state.file) {
     if (state.file.mimetype === "application/pdf") {
     return {
@@ -20,6 +22,34 @@ export const router = async (state) => {
       ...state,
       agent:"imageAnalyzer"
     }
+    }
+  }
+
+  if (state.agent && state.agent !== "auto") {
+    return {
+      ...state,
+      agent: state.agent
+    }
+  }
+
+  if (/(generate|create|make|build).*(pdf|document|resume|cv)/i.test(state.prompt) || /\b(pdf|resume|cv|document)\b/i.test(state.prompt) && /\b(generate|create|make|build)\b/i.test(state.prompt)) {
+    return {
+      ...state,
+      agent: "pdf"
+    }
+  }
+
+  if (/(generate|create|make|build).*(ppt|powerpoint|presentation|slides)/i.test(state.prompt) || /\b(ppt|powerpoint|presentation|slides)\b/i.test(state.prompt) && /\b(generate|create|make|build)\b/i.test(state.prompt)) {
+    return {
+      ...state,
+      agent: "ppt"
+    }
+  }
+
+  if (/(generate|create|make|build).*(image|illustration|poster|banner|artwork|thumbnail)/i.test(state.prompt) || /\b(image|illustration|poster|banner|artwork|thumbnail)\b/i.test(state.prompt) && /\b(generate|create|make|build)\b/i.test(state.prompt)) {
+    return {
+      ...state,
+      agent: "vision"
     }
   }
 
@@ -45,16 +75,6 @@ export const router = async (state) => {
   } catch (error) {
     console.error("pdf context lookup failed", error)
   }
-
-  if (state.agent && state.agent !== "auto") {
-    return {
-      ...state,
-      agent: state.agent
-    }
-  }
-
-  
-
 
   const llm = await getModel("router")
   const prompt = `You are an agent router.
