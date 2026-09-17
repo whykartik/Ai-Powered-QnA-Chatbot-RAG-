@@ -18,12 +18,17 @@ function SideBar() {
     const { userData } = useSelector(state => state.user)
     const [mobileOpen,setMobileOpen]=useState(false)
     useEffect(() => {
+        if (!userData?._id) {
+            dispatch(setConversations([]))
+            return
+        }
+
         const getConv = async () => {
             const data = await getConversations()
             dispatch(setConversations(data))
         }
         getConv()
-    }, [userData?._id])
+    }, [userData?._id, dispatch])
 
     const handleCreateConversation = async () => {
         const data = await createConversation()
