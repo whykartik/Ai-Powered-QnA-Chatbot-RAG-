@@ -1,7 +1,7 @@
 import { getAuth } from "firebase-admin/auth"
+import { randomUUID } from "node:crypto"
 import { app } from "../config/firebase.js"
 import User from "../models/user.model.js"
-import { createConnection } from "mongoose"
 import redis from "../../../shared/redis/redis.js"
 
 export const login = async (req, res) => {
@@ -21,7 +21,7 @@ export const login = async (req, res) => {
             })
         }
 
-        const sessionId = crypto.randomUUID()
+        const sessionId = randomUUID()
         await redis.set(`user-session-${user?._id}`,
             sessionId
             , "EX", 7 * 24 * 60 * 60)
@@ -39,11 +39,11 @@ export const login = async (req, res) => {
 
 
 
-        const isProd = process.env.NODE_ENV === "production"
+        const isSecure = process.env.NODE_ENV === "production" || req.protocol === "https" || req.headers["x-forwarded-proto"] === "https"
         res.cookie("session", sessionId, {
             httpOnly: true,
-            secure: isProd,
-            sameSite: isProd ? "none" : "strict",
+            secure: isSecure,
+            sameSite: isSecure ? "none" : "lax",
             maxAge: 7 * 24 * 60 * 60 * 1000
         })
 
