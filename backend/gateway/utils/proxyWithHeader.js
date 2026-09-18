@@ -12,6 +12,16 @@ export const proxyWithHeader = (serviceUrl) => {
                 code: error?.code,
                 message: error?.message
             })
+
+            // A connection/DNS failure to a microservice must be reported as a
+            // gateway failure, rather than passing an unhelpful Express error
+            // page back to the frontend.
+            if (!res.headersSent) {
+                return res.status(502).json({
+                    message: "The requested service is temporarily unavailable. Please try again shortly."
+                })
+            }
+
             next(error)
         },
         proxyReqOptDecorator: (proxyReqOpts, srcReq) => {

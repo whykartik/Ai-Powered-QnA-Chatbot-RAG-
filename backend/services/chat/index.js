@@ -7,12 +7,24 @@ const port =process.env.PORT
 
 const app=express()
 app.use(express.json())
-app.use("/",router)
+app.use("/api/chat",router)
 app.get("/",(req,res)=>{
     res.json({message:"hello from chat"})
 })
 
-app.listen(port,()=>{
-    console.log(`chat started at ${port}`)
-    connectDb()
-})
+const start = async () => {
+    try {
+        // Do not accept proxy traffic until the dependency used by every chat
+        // endpoint is available. This prevents a deployment from looking ready
+        // while requests fail immediately afterwards.
+        await connectDb()
+        app.listen(port,()=>{
+            console.log(`chat started at ${port}`)
+        })
+    } catch (error) {
+        console.error("chat failed to start", error)
+        process.exit(1)
+    }
+}
+
+start()
