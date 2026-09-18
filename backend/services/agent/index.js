@@ -9,7 +9,9 @@ const port =process.env.PORT
 const app=express()
 
 app.use(express.json())
+app.use("/",router)
 app.use("/api/agent",router)
+app.use("/",ragRouter)
 app.use("/api/agent/rag",ragRouter)
 
 app.use((err,req,res,next)=>{
