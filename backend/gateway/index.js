@@ -7,7 +7,15 @@ import { getCurrentUser } from "./controllers/user.controller.js"
 import protect from "./middleware/auth.middleware.js"
 import { proxyWithHeader } from "./utils/proxyWithHeader.js"
 import morgan from "morgan"
-const port =process.env.PORT
+const port = process.env.PORT || 5000
+const normalizeServiceUrl = (value, fallback) => {
+    if (!value || !value.trim()) return fallback
+    return value.trim().replace(/\/+$/, "")
+}
+
+const AUTH_SERVICE = normalizeServiceUrl(process.env.AUTH_SERVICE, "http://localhost:5001")
+const CHAT_SERVICE = normalizeServiceUrl(process.env.CHAT_SERVICE, "http://localhost:5002")
+const AGENT_SERVICE = normalizeServiceUrl(process.env.AGENT_SERVICE, "http://localhost:5003")
 
 const app=express()
 const allowedOrigins = [process.env.FRONTEND_URL, "http://localhost:5173", "http://127.0.0.1:5173"]
@@ -23,9 +31,9 @@ app.use(cors({
 }))
 app.use(morgan("dev"))
 app.use(cookieParser())
-app.use("/api/auth",proxy(process.env.AUTH_SERVICE))
-app.use("/api/chat",protect,proxyWithHeader(process.env.CHAT_SERVICE))
-app.use("/api/agent",protect,proxyWithHeader(process.env.AGENT_SERVICE))
+app.use("/api/auth",proxy(AUTH_SERVICE))
+app.use("/api/chat",protect,proxyWithHeader(CHAT_SERVICE))
+app.use("/api/agent",protect,proxyWithHeader(AGENT_SERVICE))
 app.get("/api/me",protect,getCurrentUser)
 app.get("/",(req,res)=>{
     res.json({message:"hello from gateway v5"})
