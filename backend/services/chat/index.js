@@ -3,7 +3,7 @@ import express from "express"
 import connectDb from "./config/db.js"
 import router from "./routes/chat.routes.js"
 
-const port =process.env.PORT
+const port = Number(process.env.PORT) || 5002
 
 const app=express()
 app.use(express.json())
@@ -19,7 +19,7 @@ const start = async () => {
         // endpoint is available. This prevents a deployment from looking ready
         // while requests fail immediately afterwards.
         await connectDb()
-        app.listen(port,()=>{
+        app.listen(port, "0.0.0.0", () => {
             console.log(`chat started at ${port}`)
         })
     } catch (error) {

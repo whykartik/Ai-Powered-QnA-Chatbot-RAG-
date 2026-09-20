@@ -4,7 +4,7 @@ import connectDb from "./config/db.js"
 import router from "./routes/agent.route.js"
 import ragRouter from "./rag/routes.js"
 
-const port =process.env.PORT
+const port = Number(process.env.PORT) || 5003
 
 const app=express()
 
@@ -29,7 +29,7 @@ app.get("/",(req,res)=>{
     res.json({message:"hello from agent"})
 })
 
-app.listen(port,()=>{
+app.listen(port, "0.0.0.0", () => {
     console.log(`agent started at ${port}`)
     connectDb()
 })
