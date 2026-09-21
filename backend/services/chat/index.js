@@ -5,27 +5,43 @@ import router from "./routes/chat.routes.js"
 
 const port = Number(process.env.PORT) || 5002
 
-const app=express()
+const app = express()
+
 app.use(express.json())
-app.use("/",router)
-app.use("/api/chat",router)
-app.get("/",(req,res)=>{
-    res.json({message:"hello from chat"})
+
+app.get("/health", (req, res) => {
+    res.status(200).json({ status: "ok", service: "chat" })
 })
+
+app.use("/", router)
+app.use("/api/chat", router)
+
+app.get("/", (req, res) => {
+    res.json({ message: "hello from chat" })
+})
+
+let server
 
 const start = async () => {
     try {
-        // Do not accept proxy traffic until the dependency used by every chat
-        // endpoint is available. This prevents a deployment from looking ready
-        // while requests fail immediately afterwards.
         await connectDb()
-        app.listen(port, "0.0.0.0", () => {
-            console.log(`chat started at ${port}`)
+        server = app.listen(port, "0.0.0.0", () => {
+            console.log(`chat service started at ${port}`)
         })
     } catch (error) {
-        console.error("chat failed to start", error)
+        console.error("chat service failed to start:", error)
         process.exit(1)
     }
 }
 
+process.on("SIGTERM", () => {
+    console.log("SIGTERM received for chat service, shutting down gracefully...")
+    if (server) {
+        server.close(() => process.exit(0))
+    } else {
+        process.exit(0)
+    }
+})
+
 start()
+
