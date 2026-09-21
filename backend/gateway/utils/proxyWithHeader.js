@@ -7,18 +7,17 @@ export const proxyWithHeader = (serviceUrl) => {
         reqBodyEncoding: null,
         limit: "25mb",
         proxyErrorHandler: (error, res, next) => {
-            console.error("proxy request failed", {
-                serviceUrl,
+            console.error(`[Gateway Proxy Error] Target: ${serviceUrl}`, {
                 code: error?.code,
-                message: error?.message
+                message: error?.message,
+                stack: error?.stack
             })
 
-            // A connection/DNS failure to a microservice must be reported as a
-            // gateway failure, rather than passing an unhelpful Express error
-            // page back to the frontend.
             if (!res.headersSent) {
                 return res.status(502).json({
-                    message: "The requested service is temporarily unavailable. Please try again shortly."
+                    error: "Bad Gateway",
+                    message: `Target service at ${serviceUrl} is unreachable or down.`,
+                    details: error?.code || error?.message
                 })
             }
 
@@ -32,3 +31,4 @@ export const proxyWithHeader = (serviceUrl) => {
         }
     })
 }
+
