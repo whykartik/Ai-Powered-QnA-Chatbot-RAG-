@@ -83,12 +83,14 @@ Answer the user using only the above search results.
     }
     } catch (error) {
         console.log(error)
-         return {
-            ...state,
-            aiResponse:error?.data?.message || "failed to generate chat"
+        if (error?.status === 429) {
+            throw error
         }
-        
-    
+        return {
+            ...state,
+            aiResponse: error?.data?.message || "failed to generate chat"
+        }
     }
+
    
 }
