@@ -16,22 +16,30 @@ function Home() {
     const {userData}=useSelector(state=>state.user)
     const dispatch=useDispatch()
     const [ragOpen, setRagOpen] = useState(false)
+    const [isLoggingIn, setIsLoggingIn] = useState(false)
+
     const handleLogin = async (token) => {
         try {
             const { data } = await api.post("/api/auth/login", { token })
             dispatch(setUserdata(data))
         } catch (error) {
             console.log(error)
+        } finally {
+            setIsLoggingIn(false)
         }
     }
 
-
     const googleLogin = async () => {
-        const data = await signInWithPopup(auth, googleProvider)
-        const token = await data.user.getIdToken()
-        console.log(token)
-        await handleLogin(token)
-        console.log(data)
+        if (isLoggingIn) return
+        setIsLoggingIn(true)
+        try {
+            const data = await signInWithPopup(auth, googleProvider)
+            const token = await data.user.getIdToken()
+            await handleLogin(token)
+        } catch (error) {
+            console.log(error)
+            setIsLoggingIn(false)
+        }
     }
     return (
         <div className='h-[100dvh] min-h-0 flex bg-[#0d0f14] text-white overflow-hidden'>
@@ -60,12 +68,13 @@ function Home() {
                         <p className='text-[13px] text-slate-500'>Please login to continue using the app.</p>
                     </div>
 
-                    <button className='w-full flex items-center justify-center gap-3 py-[11px] rounded-xl text-sm font-medium text-black/90 bg-white hover:bg-gray-200  transition-all duration-150 cursor-pointer' onClick={googleLogin}>
+                    <button disabled={isLoggingIn} className={`w-full flex items-center justify-center gap-3 py-[11px] rounded-xl text-sm font-medium text-black/90 bg-white hover:bg-gray-200 transition-all duration-150 cursor-pointer ${isLoggingIn ? "opacity-50 cursor-not-allowed" : ""}`} onClick={googleLogin}>
                         <FcGoogle size={15} />
-                        Continue With Google
+                        {isLoggingIn ? "Signing in..." : "Continue With Google"}
                     </button>
                 </div>
             </div>}
+
           
         </div>
     )

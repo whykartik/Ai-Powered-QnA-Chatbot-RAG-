@@ -17,18 +17,35 @@ function SideBar() {
     const { conversations, selectedConversation } = useSelector(state => state.conversation)
     const { userData } = useSelector(state => state.user)
     const [mobileOpen,setMobileOpen]=useState(false)
+    const [isLoadingConversations, setIsLoadingConversations] = useState(false)
+
     useEffect(() => {
         if (!userData?._id) {
             dispatch(setConversations([]))
             return
         }
 
+        let isMounted = true
         const getConv = async () => {
-            const data = await getConversations()
-            dispatch(setConversations(data))
+            if (isLoadingConversations) return
+            setIsLoadingConversations(true)
+            try {
+                const data = await getConversations()
+                if (isMounted) {
+                    dispatch(setConversations(data))
+                }
+            } catch (error) {
+                console.error("Failed to load conversations", error)
+            } finally {
+                if (isMounted) {
+                    setIsLoadingConversations(false)
+                }
+            }
         }
         getConv()
-    }, [userData?._id, dispatch])
+        return () => { isMounted = false }
+    }, [userData?._id])
+
 
     const handleCreateConversation = async () => {
         const data = await createConversation()

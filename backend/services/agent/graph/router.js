@@ -76,11 +76,22 @@ export const router = async (state) => {
     console.error("pdf context lookup failed", error)
   }
 
-  const llm = await getModel("router")
-  const prompt = `You are an agent router.
+  // Fast-path keyword matching to eliminate extra LLM routing overhead
+  if (/^(hi|hello|hey|greetings|howdy|thanks|thank you|who are you|what can you do)/i.test(promptText) || promptText.length < 20) {
+    return { ...state, agent: "chat" }
+  }
+  if (/(code|function|bug|error|script|react|python|java|javascript|html|css|sql|api|build|debug)/i.test(promptText)) {
+    return { ...state, agent: "coding" }
+  }
+  if (/(search|latest|news|weather|price|who is|where is|today|current|internet)/i.test(promptText)) {
+    return { ...state, agent: "search" }
+  }
+
+  try {
+    const llm = await getModel("router")
+    const prompt = `You are an agent router.
 
 Available agents:
-
 - chat
 - search
 - coding
@@ -88,61 +99,20 @@ Available agents:
 - ppt
 - vision 
 
-Rules:
+Return ONLY one word: chat, search, coding, pdf, ppt, vision.
 
-chat:
-General conversation,
-explanations,
-learning,
-questions.
+User Query: ${state.prompt}`
 
-search:
-Current events,
-latest information,
-news,
-recent developments,
-internet lookup.
+    const response = await llm.invoke(prompt)
 
-coding:
-Generate code,
-debug code,
-build projects,
-architecture,
-API design.
-
-pdf:
-Questions about generate PDFs
-or document context.
-
-ppt:
-Questions about generate ppts
-or ppt context.
-
-vision:
-  Generate image,
-  create image
-
-Return ONLY one word:
-
-chat
-search
-coding
-pdf
-ppt
-vision
-
-User Query:
- ${state.prompt}
-`
-
-  const response = await llm.invoke(prompt)
-
-  return {
-    ...state,
-    agent: response.content
-      .trim()
-      .toLowerCase()
+    return {
+      ...state,
+      agent: (response.content || "chat").trim().toLowerCase()
+    }
+  } catch (err) {
+    return { ...state, agent: "chat" }
   }
+
 
 
 
