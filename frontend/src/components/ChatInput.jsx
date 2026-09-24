@@ -75,7 +75,6 @@ function ChatInput() {
     dispatch(setIsLoading(true))
     let conversation = selectedConversation
     if (!conversation) {
-      dispatch(setMessages([]))
       const conv = await createConversation()
       if (!conv) {
         dispatch(setIsLoading(false))
@@ -92,6 +91,7 @@ function ChatInput() {
       dispatch(setConvTitle({ conversationId: conversation?._id, title }))
       updateConversation({ id: conversation?._id, title }).catch(() => {})
     }
+
 
     const formData = new FormData()
     formData.append("prompt", prompt)
