@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { LogOut, Menu, MessageSquare, PanelLeftIcon, PanelRight, PenSquare, Plus, User, X } from "lucide-react"
 import { getConversations } from '../features/getConversations'
 import getMessages from '../features/getMessages'
 
 import { useDispatch, useSelector } from 'react-redux'
-import { addConversation, setConversations, setSelectedConversation } from '../redux/conversationSlice'
+import { setConversations, setSelectedConversation } from '../redux/conversationSlice'
 import { setMessages, setArtifacts } from '../redux/messageSlice'
-import { createConversation } from '../features/createConversation'
 import logOut from '../features/logOut'
 import { setUserdata } from '../redux/userSlice'
 import { cleanupPdfContext } from '../features/cleanupPdfContext'
@@ -15,7 +14,6 @@ function SideBar() {
     const [collapsed, setCollapsed] = useState(false)
     const [imageError, setImageError] = useState(false)
     const [mobileOpen, setMobileOpen] = useState(false)
-    const [isLoadingConversations, setIsLoadingConversations] = useState(false)
 
     const dispatch = useDispatch()
     const { conversations, selectedConversation } = useSelector(state => state.conversation)
@@ -29,8 +27,6 @@ function SideBar() {
 
         let isMounted = true
         const getConv = async () => {
-            if (isLoadingConversations) return
-            setIsLoadingConversations(true)
             try {
                 const data = await getConversations()
                 if (isMounted && data) {
@@ -38,15 +34,11 @@ function SideBar() {
                 }
             } catch (error) {
                 console.error("Failed to load conversations", error)
-            } finally {
-                if (isMounted) {
-                    setIsLoadingConversations(false)
-                }
             }
         }
         getConv()
         return () => { isMounted = false }
-    }, [userData?._id])
+    }, [dispatch, userData?._id])
 
     const handleNewChat = async () => {
         if (selectedConversation?._id) {

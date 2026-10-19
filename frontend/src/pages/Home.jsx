@@ -1,5 +1,4 @@
 import { signInWithPopup } from 'firebase/auth'
-import React from 'react'
 import { useState } from 'react'
 import { X } from 'lucide-react'
 import { auth, googleProvider } from '../../utils/firebase'

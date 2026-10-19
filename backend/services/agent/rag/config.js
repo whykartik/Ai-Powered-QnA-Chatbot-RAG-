@@ -9,6 +9,6 @@ export const ragConfig = {
   binaryCandidates: Number(process.env.RAG_BINARY_CANDIDATES || 64),
   embeddingBatchSize: Number(process.env.RAG_EMBEDDING_BATCH_SIZE || 32),
   queryCacheTtl: Number(process.env.RAG_QUERY_CACHE_TTL || 300),
-  groqModel: process.env.RAG_GROQ_MODEL || "llama-3.1-8b-instant",
+  groqModel: process.env.RAG_GROQ_MODEL || "openai/gpt-oss-120b",
   maxOutputTokens: Number(process.env.RAG_MAX_OUTPUT_TOKENS || 700)
 }

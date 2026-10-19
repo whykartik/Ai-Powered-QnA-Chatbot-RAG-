@@ -1,11 +1,12 @@
 import { Code2, FileText, Globe, ImageIcon, MessageSquare, Mic, MicOff, Paperclip, Presentation, Send, X, Zap } from 'lucide-react'
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import sendMessage from '../features/sendMessage'
 import { useDispatch, useSelector } from 'react-redux'
-import { addMessage, setArtifacts, setIsLoading, setMessages } from '../redux/messageSlice'
+import { addMessage, setArtifacts, setIsLoading } from '../redux/messageSlice'
 import { createConversation } from '../features/createConversation'
 import { addConversation, setConvTitle, setSelectedConversation } from '../redux/conversationSlice'
 import { updateConversation } from '../features/updateConversation'
+import { generateConversationTitle } from '../features/generateConversationTitle'
 import { useRef } from 'react'
 
 
@@ -13,7 +14,7 @@ function ChatInput() {
   const [value, setValue] = useState("")
   const [selectedAgent, setSelectedAgent] = useState("Auto")
   const { selectedConversation } = useSelector(state => state.conversation)
-  const { messages, isLoading } = useSelector(state => state.message)
+  const { isLoading } = useSelector(state => state.message)
   const [selectedFile, setSelectedFile] = useState(null)
   const [listening, setListening] = useState(false)
   const recognitionRef = useRef(null)
@@ -88,11 +89,7 @@ function ChatInput() {
       conversation = conv
     }
 
-    if (conversation.title === "New Chat") {
-      const title = prompt.slice(0, 40)
-      dispatch(setConvTitle({ conversationId: conversation._id, title }))
-      updateConversation({ id: conversation._id, title }).catch(() => {})
-    }
+    const shouldGenerateTitle = conversation.title === "New Chat"
 
     dispatch(addMessage({ role: "user", content: prompt }))
 
@@ -106,6 +103,13 @@ function ChatInput() {
 
     try {
       const data = await sendMessage(formData)
+      if (shouldGenerateTitle) {
+        generateConversationTitle(prompt).then(title => {
+          if (!title) return
+          dispatch(setConvTitle({ conversationId: conversation._id, title }))
+          updateConversation({ id: conversation._id, title })
+        })
+      }
       if (data && data.answer) {
         dispatch(setArtifacts(data.artifacts || []))
         dispatch(addMessage({ role: "assistant", content: data.answer, images: data.images }))

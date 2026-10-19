@@ -1,5 +1,5 @@
 import { Check, Code2, Copy, Eye, PanelRightClose, PanelRightOpen, X } from 'lucide-react'
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { useSelector } from 'react-redux'
 import { AnimatePresence, easeInOut, motion } from "motion/react"
 import Editor from '@monaco-editor/react';
@@ -88,7 +88,7 @@ function Artifact() {
 
   }
 
-  const PanelContent = ({onClose}) => {
+  const renderPanelContent = (onClose) => {
     return (
       <>
         {!collapsed ? <div className='flex flex-col h-full bg-[#0d0f14]'>
@@ -216,7 +216,7 @@ function Artifact() {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} onClick={() => setMobileOpen(false)} className="lg:hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" />
 
           <motion.div initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={{ duration: 0.25, ease: "easeInOut" }} className="lg:hidden fixed inset-y-0 right-0 z-50 w-[88vw] max-w-[420px] border-l border-white/[0.06] overflow-hidden">
-            <PanelContent onClose={()=>setMobileOpen(false)}/>
+            {renderPanelContent(() => setMobileOpen(false))}
           </motion.div>
 
         </>
@@ -234,7 +234,7 @@ function Artifact() {
         }}
         className='hidden lg:flex h-full border-l border-white/[0.06] flex-col overflow-hidden shrink-0 '>
 
-        <PanelContent />
+        {renderPanelContent()}
       </motion.div>
     </>
   )

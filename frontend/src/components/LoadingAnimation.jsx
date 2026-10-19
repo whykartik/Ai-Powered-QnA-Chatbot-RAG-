@@ -1,18 +1,20 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from "motion/react"
+
+const thinkingLabels = ["Thinking", "Analyzing", "Reasoning", "Generating"]
+
 function LoadingAnimation() {
 
-    const Thinking_Lables = ["Thinking", "Analyzing", "Reasoning", "Generating"]
     const [labelIndex, setLabelIndex] = useState(0)
 
     useEffect(() => {
         const interval = setInterval(() => {
-            setLabelIndex((prev) => (prev + 1) % Thinking_Lables.length)
+            setLabelIndex((prev) => (prev + 1) % thinkingLabels.length)
         }, 1800)
         return () => clearInterval(interval)
     }, [])
 
-    const label = Thinking_Lables[labelIndex]
+    const label = thinkingLabels[labelIndex]
 
     return (
         <div className='flex items-center gap-3 max-w-[72%] py-1'>

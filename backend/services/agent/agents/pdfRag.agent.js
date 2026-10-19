@@ -59,7 +59,11 @@ export const pdfRag=async (state)=>{
         } catch (cacheError) {
           console.error("pdf context cache unavailable; MongoDB remains the source of truth", cacheError)
         }
-        await vectorStore(docs, collectionName)
+        try {
+          await vectorStore(docs, collectionName)
+        } catch (indexError) {
+          console.error("pdf vector indexing unavailable; continuing with stored text", indexError.message)
+        }
         if (state.pdfOperation) {
           return {
             ...state,

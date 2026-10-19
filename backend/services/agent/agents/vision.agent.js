@@ -9,31 +9,19 @@ export const visionAgent=async (state) => {
     try {
         await checkAgentLimit(state.userId,"image")
          const llm=await getModel("image")
-    const res=await llm.invoke(`
-        You are an elite AI image prompt engineer.
+    const res=await llm.invoke(`You turn a user's request into a clear prompt for an image generator.
 
-Convert the user request into a highly detailed image generation prompt.
+Preserve the request faithfully:
+- Keep every named subject, object, action, relationship, setting, and constraint the user specified.
+- Describe the exact requested scene first. Do not replace unusual or surreal details with a more conventional scene.
+- Do not omit requested elements, and do not invent a different subject or story.
+- Make all important subjects and their interaction fully visible in the frame; avoid close crops that hide part of the requested scene.
+- Add only visual details that support the request. Do not force photorealism, cinematic lighting, or any other style unless requested.
 
-Requirements:
+Return one detailed but concise image prompt, with no preamble or explanation.
 
-- Cinematic lighting
-- Professional composition
-- Ultra realistic
-- High detail
-- Beautiful color palette
-- Sharp focus
-- 8K quality
-- Photorealistic
-- Depth of field
-- Professional photography
-- Stunning visuals
-
-Return only the image prompt.
-
-User Request:
-${state.prompt}
-
-        `)
+User request:
+${state.prompt}`)
 
 const prompt=res.content.trim()
 

@@ -1,5 +1,4 @@
-import { Check, Copy, ExternalLink, FileX2, X } from 'lucide-react'
-import React from 'react'
+import { Check, Copy, ExternalLink, X } from 'lucide-react'
 import { useState } from 'react'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -40,7 +39,7 @@ function MessageBubble({ role, content, images }) {
                 onClick={() => setLightBox(img)}
                 loading="lazy"
                 onError={(e) => e.currentTarget.remove()}
-                className="w-40 h-28 rounded-xl object-cover border border-white/10 cursor-zoom-in hover:opacity-90 transition"
+                className="block w-full max-h-[min(70vh,640px)] rounded-xl object-contain border border-white/10 cursor-zoom-in hover:opacity-90 transition"
 
               />
             ))}
@@ -166,7 +165,7 @@ function MessageBubble({ role, content, images }) {
                 onClick={() => setLightBox(src)}
                 loading="lazy"
                 onError={(e) => e.currentTarget.remove()}
-                className="w-40 h-28 rounded-xl object-cover border border-white/10 cursor-zoom-in hover:opacity-90 transition"
+                className="block w-full max-h-[min(70vh,640px)] rounded-xl object-contain border border-white/10 cursor-zoom-in hover:opacity-90 transition"
               />
             )
           }

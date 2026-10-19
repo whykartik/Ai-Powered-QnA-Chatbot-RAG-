@@ -1,5 +1,7 @@
 import axios from "axios"
 import { graph } from "../graph/graph.js"
+import { HumanMessage, SystemMessage } from "@langchain/core/messages"
+import { getModel } from "../config/llmModels.js"
 import { addMessage } from "../config/memory.js"
 import redis from "../../../shared/redis/redis.js"
 import PdfContext from "../models/pdfContext.model.js"
@@ -50,5 +52,31 @@ export const agent=async (req,res,next) => {
     } catch (error) {
          console.error("agent request failed", error.response?.data || error.message)
        next(error)
+    }
+}
+
+export const generateConversationTitle = async (req, res) => {
+    const { prompt } = req.body
+    if (typeof prompt !== "string" || !prompt.trim()) {
+        return res.status(400).json({ message: "prompt is required" })
+    }
+
+    const fallbackTitle = prompt.trim().replace(/\s+/g, " ").split(" ").slice(0, 8).join(" ").slice(0, 60)
+
+    try {
+        const model = await getModel("chat")
+        const response = await model.invoke([
+            new SystemMessage("Create a concise, meaningful title for a conversation based on the user's message. Return only the title, in 3 to 7 words, with no quotes or ending punctuation."),
+            new HumanMessage(prompt.trim().slice(0, 4000))
+        ])
+        const content = typeof response.content === "string"
+            ? response.content
+            : response.content.map(part => typeof part === "string" ? part : part.text || "").join(" ")
+        const title = content.replace(/[\r\n"']/g, " ").replace(/\s+/g, " ").trim().replace(/[.!?]+$/, "").slice(0, 60)
+
+        return res.status(200).json({ title: title || fallbackTitle })
+    } catch (error) {
+        console.error("Conversation title generation failed:", error.message)
+        return res.status(200).json({ title: fallbackTitle })
     }
 }

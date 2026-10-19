@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import { useEffect } from 'react'
 import Nav from './Nav'
 import MessageList from './MessageList'
 import ChatInput from './ChatInput'
@@ -25,7 +25,7 @@ function ChatArea() {
 
     getMesg()
     return () => { isMounted = false }
-  }, [selectedConversation?._id])
+  }, [dispatch, selectedConversation?._id, selectedConversation?.title])
 
 
   return (
