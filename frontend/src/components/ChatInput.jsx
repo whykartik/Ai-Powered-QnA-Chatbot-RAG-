@@ -7,6 +7,7 @@ import { createConversation } from '../features/createConversation'
 import { addConversation, setConvTitle, setSelectedConversation } from '../redux/conversationSlice'
 import { updateConversation } from '../features/updateConversation'
 import { generateConversationTitle } from '../features/generateConversationTitle'
+import { setUserdata } from '../redux/userSlice'
 import { useRef } from 'react'
 
 
@@ -15,6 +16,7 @@ function ChatInput() {
   const [selectedAgent, setSelectedAgent] = useState("Auto")
   const { selectedConversation } = useSelector(state => state.conversation)
   const { isLoading } = useSelector(state => state.message)
+  const { userData } = useSelector(state => state.user)
   const [selectedFile, setSelectedFile] = useState(null)
   const [listening, setListening] = useState(false)
   const recognitionRef = useRef(null)
@@ -70,7 +72,7 @@ function ChatInput() {
 
 
   const handleSendMessage = async () => {
-    if (!value.trim() || isLoading) return
+    if (!userData || !value.trim() || isLoading) return
     const prompt = value.trim()
     const file = selectedFile
     setValue("")
@@ -81,6 +83,11 @@ function ChatInput() {
     if (!conversation) {
       const conv = await createConversation()
       if (!conv) {
+        dispatch(setIsLoading(false))
+        return
+      }
+      if (conv.unauthorized) {
+        dispatch(setUserdata(null))
         dispatch(setIsLoading(false))
         return
       }
@@ -249,6 +256,7 @@ function ChatInput() {
 
 
         <textarea
+          disabled={!userData}
           placeholder='Ask Anything...'
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={(e) => {
@@ -271,17 +279,18 @@ function ChatInput() {
               }
             }} />
 
-            <button className='flex items-center justify-center w-8 h-8 rounded-lg text-slate-600 hover:text-slate-400 hover:bg-white/[0.05] border border-transparent hover:border-white/[0.06] transition-all duration-150 bg-transparent cursor-pointer' onClick={() => fileRef.current.click()}>
+            <button disabled={!userData} className='flex items-center justify-center w-8 h-8 rounded-lg text-slate-600 hover:text-slate-400 hover:bg-white/[0.05] border border-transparent hover:border-white/[0.06] transition-all duration-150 bg-transparent cursor-pointer disabled:cursor-not-allowed' onClick={() => fileRef.current.click()}>
               <Paperclip size={16} />
             </button>
             <button
+              disabled={!userData}
               onClick={toggleMic}
-              className={`flex items-center justify-center w-8 h-8 rounded-lg  transition-all duration-150 cursor-pointer ${listening ?"bg-red-500 text-white":"text-slate-600 hover:bg-white/[0.05]" }`}>
+              className={`flex items-center justify-center w-8 h-8 rounded-lg  transition-all duration-150 cursor-pointer disabled:cursor-not-allowed ${listening ?"bg-red-500 text-white":"text-slate-600 hover:bg-white/[0.05]" }`}>
              {listening?<Mic size={16} />:<MicOff size={16}/>} 
             </button>
           </div>
           <button
-            disabled={!value && isLoading}
+            disabled={!userData || !value.trim() || isLoading}
             onClick={handleSendMessage}
             className={`flex items-center justify-center w-8 h-8 rounded-lg border-none cursor-pointer transition-all duration-150 ${value.trim() ? "bg-linear-to-br from-indigo-500 to-violet-700 hover:opacity-90 text-white" : "bg-white/[0.05] text-slate-600 cursor-not-allowed"}`}>
           <Send size={15} />

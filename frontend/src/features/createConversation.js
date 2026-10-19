@@ -5,7 +5,10 @@ export const createConversation=async () => {
         const {data}=await api.get("/api/chat/create-conversation")
         return data
     } catch (error) {
-       console.log(error)
+         if (error?.response?.status === 401) {
+          return { unauthorized: true }
+         }
+         console.error("Failed to create conversation", error)
          return null
     }
 }
