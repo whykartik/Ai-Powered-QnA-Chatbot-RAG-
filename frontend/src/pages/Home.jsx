@@ -1,18 +1,18 @@
-import { signInWithPopup } from 'firebase/auth'
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { X } from 'lucide-react'
-import { auth, googleProvider } from '../../utils/firebase'
 import api from '../../utils/axios'
 import { FcGoogle } from "react-icons/fc";
 import { useDispatch, useSelector } from 'react-redux';
 import { setUserdata } from '../redux/userSlice';
 import SideBar from '../components/SideBar';
 import ChatArea from '../components/ChatArea';
-import Artifact from '../components/Artifact';
-import RagChat from '../components/RagChat';
+
+const Artifact = lazy(() => import('../components/Artifact'))
+const RagChat = lazy(() => import('../components/RagChat'))
 
 function Home() {
     const {userData}=useSelector(state=>state.user)
+    const {artifacts}=useSelector(state=>state.message)
     const dispatch=useDispatch()
     const [ragOpen, setRagOpen] = useState(false)
     const [isLoggingIn, setIsLoggingIn] = useState(false)
@@ -41,6 +41,10 @@ function Home() {
         setLoginError(null)
         setIsLoggingIn(true)
         try {
+            const [{ signInWithPopup }, { auth, googleProvider }] = await Promise.all([
+                import('firebase/auth'),
+                import('../../utils/firebase')
+            ])
             const data = await signInWithPopup(auth, googleProvider)
             const token = await data.user.getIdToken()
             await handleLogin(token)
@@ -61,13 +65,19 @@ function Home() {
         <button aria-label='Close Artifact Q&A' onClick={() => setRagOpen(false)} className='absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-lg bg-black/30 text-slate-300 hover:bg-black/50'>
             <X size={16} />
         </button>
-        <RagChat />
+        <Suspense fallback={<div className="h-full bg-[#0d0f14]" />}>
+            <RagChat />
+        </Suspense>
     </div>}
     </>}
 
 <SideBar/>
 <ChatArea/>
-<Artifact/>
+{artifacts.length > 0 && (
+    <Suspense fallback={null}>
+        <Artifact />
+    </Suspense>
+)}
 
 
 

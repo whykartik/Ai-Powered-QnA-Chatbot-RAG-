@@ -1,9 +1,9 @@
 import { Check, Copy, ExternalLink, X } from 'lucide-react'
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
+
+const SyntaxHighlighter = lazy(() => import('./SyntaxHighlighter.jsx'))
 function MessageBubble({ role, content, images }) {
   const isUser = role === "user"
   const [lightBox, setLightBox] = useState(null)
@@ -137,21 +137,9 @@ function MessageBubble({ role, content, images }) {
                   </div>
 
 
-                  <SyntaxHighlighter
-                    language={language}
-                    style={oneDark}
-                    wrapLongLines
-                    showLineNumbers
-                    customStyle={{
-                      margin: 0,
-                      padding: "16px",
-                      background: "#0d1117",
-                      fontSize: "13px",
-                    }}
-
-                  >
-                    {value}
-                  </SyntaxHighlighter>
+                  <Suspense fallback={<pre className="overflow-x-auto p-4 text-[13px]"><code>{value}</code></pre>}>
+                    <SyntaxHighlighter language={language} value={value} />
+                  </Suspense>
 
 
                 </div>

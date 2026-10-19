@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react'
+import { lazy, Suspense, useEffect, useRef } from 'react'
 import { useSelector } from 'react-redux'
-import MessageBubble from './MessageBubble'
 import LoadingAnimation from './LoadingAnimation'
+
+const MessageBubble = lazy(() => import('./MessageBubble'))
 
 function MessageList() {
     const {selectedConversation}=useSelector(state=>state.conversation)
@@ -42,7 +43,9 @@ function MessageList() {
 
         {messages?.map((msg,i)=>(
           <div key={`${msg?.role}-${i}`}>
+            <Suspense fallback={<div className="min-h-6" />}>
                <MessageBubble role={msg?.role} content={msg?.content} images={msg.images || []} /> 
+            </Suspense>
             </div>
         ))}
 

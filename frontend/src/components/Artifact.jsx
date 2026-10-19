@@ -1,8 +1,8 @@
 import { Check, Code2, Copy, Eye, PanelRightClose, PanelRightOpen, X } from 'lucide-react'
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { useSelector } from 'react-redux'
 import { AnimatePresence, easeInOut, motion } from "motion/react"
-import Editor from '@monaco-editor/react';
+const Editor = lazy(() => import('@monaco-editor/react'))
 function Artifact() {
   const [collapsed, setCollapsed] = useState(false)
   const { artifacts } = useSelector(state => state.message)
@@ -163,13 +163,14 @@ function Artifact() {
                 transition={{ duration: 0.5 }}
                 className='w-full h-full'
               >
-                <Editor
-                  theme='vs-dark'
-                  language={detectLanguage(file?.name)}
-                  value={file?.content}
-                  options={{ readOnly: true, minimap: { enabled: false }, fontSize: 13, wordWrap: "on", automaticLayout: true, scrollBeyondLastLine: false, padding: { top: 16 }, lineNumbers: "on", renderLineHighlight: "none" }}
-
-                />
+                <Suspense fallback={<div className="p-4 text-xs text-slate-500">Loading editor...</div>}>
+                  <Editor
+                    theme='vs-dark'
+                    language={detectLanguage(file?.name)}
+                    value={file?.content}
+                    options={{ readOnly: true, minimap: { enabled: false }, fontSize: 13, wordWrap: "on", automaticLayout: true, scrollBeyondLastLine: false, padding: { top: 16 }, lineNumbers: "on", renderLineHighlight: "none" }}
+                  />
+                </Suspense>
 
               </motion.div>
             }
