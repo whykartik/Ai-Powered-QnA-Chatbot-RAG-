@@ -21,13 +21,16 @@ function Home() {
     const handleLogin = async (token) => {
         setLoginError(null)
         try {
-            const { data } = await api.post("/api/auth/login", { token })
-            dispatch(setUserdata(data))
+            const { data: loginData } = await api.post("/api/auth/login", { token })
+            const { data: sessionUser } = await api.get("/api/me")
+            dispatch(setUserdata(sessionUser || loginData))
         } catch (error) {
-            console.error("Login failed", error)
             const status = error?.response?.status
+            console.error("Login failed", { status, code: error?.code })
             if (status === 429) {
                 setLoginError("Server is temporarily busy or rate limited. Please wait a moment and retry.")
+            } else if (status === 401 && error?.config?.url?.includes("/api/me")) {
+                setLoginError("Google sign-in succeeded, but the server did not accept the session cookie. Check the deployed auth and gateway Redis configuration.")
             } else {
                 setLoginError(error?.response?.data?.message || "Login failed. Please try again.")
             }
@@ -49,7 +52,7 @@ function Home() {
             const token = await data.user.getIdToken()
             await handleLogin(token)
         } catch (error) {
-            console.error("Google popup error", error)
+            console.error("Google popup error", { code: error?.code, message: error?.message })
             setIsLoggingIn(false)
             if (error?.code !== "auth/popup-closed-by-user") {
                 setLoginError(error?.message || "Failed to sign in with Google")
