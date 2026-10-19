@@ -17,13 +17,21 @@ function Home() {
     const dispatch=useDispatch()
     const [ragOpen, setRagOpen] = useState(false)
     const [isLoggingIn, setIsLoggingIn] = useState(false)
+    const [loginError, setLoginError] = useState(null)
 
     const handleLogin = async (token) => {
+        setLoginError(null)
         try {
             const { data } = await api.post("/api/auth/login", { token })
             dispatch(setUserdata(data))
         } catch (error) {
-            console.log(error)
+            console.error("Login failed", error)
+            const status = error?.response?.status
+            if (status === 429) {
+                setLoginError("Server is temporarily busy or rate limited. Please wait a moment and retry.")
+            } else {
+                setLoginError(error?.response?.data?.message || "Login failed. Please try again.")
+            }
         } finally {
             setIsLoggingIn(false)
         }
@@ -31,14 +39,18 @@ function Home() {
 
     const googleLogin = async () => {
         if (isLoggingIn) return
+        setLoginError(null)
         setIsLoggingIn(true)
         try {
             const data = await signInWithPopup(auth, googleProvider)
             const token = await data.user.getIdToken()
             await handleLogin(token)
         } catch (error) {
-            console.log(error)
+            console.error("Google popup error", error)
             setIsLoggingIn(false)
+            if (error?.code !== "auth/popup-closed-by-user") {
+                setLoginError(error?.message || "Failed to sign in with Google")
+            }
         }
     }
     return (
@@ -68,12 +80,19 @@ function Home() {
                         <p className='text-[13px] text-slate-500'>Please login to continue using the app.</p>
                     </div>
 
+                    {loginError && (
+                        <p className='text-[12px] text-rose-400 bg-rose-500/10 border border-rose-500/20 px-3 py-2 rounded-lg text-center leading-relaxed'>
+                            {loginError}
+                        </p>
+                    )}
+
                     <button disabled={isLoggingIn} className={`w-full flex items-center justify-center gap-3 py-[11px] rounded-xl text-sm font-medium text-black/90 bg-white hover:bg-gray-200 transition-all duration-150 cursor-pointer ${isLoggingIn ? "opacity-50 cursor-not-allowed" : ""}`} onClick={googleLogin}>
                         <FcGoogle size={15} />
                         {isLoggingIn ? "Signing in..." : "Continue With Google"}
                     </button>
                 </div>
             </div>}
+
 
           
         </div>

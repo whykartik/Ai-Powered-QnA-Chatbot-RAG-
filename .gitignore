@@ -69,3 +69,4 @@ firebase-adminsdk*.json
 # =========================
 .cache/
 tmp/
+.fallback-redis.json

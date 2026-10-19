@@ -72,7 +72,10 @@ function ChatInput() {
     if (!value.trim() || isLoading) return
     const prompt = value.trim()
     const file = selectedFile
+    setValue("")
+    setSelectedFile(null)
     dispatch(setIsLoading(true))
+
     let conversation = selectedConversation
     if (!conversation) {
       const conv = await createConversation()
@@ -81,36 +84,42 @@ function ChatInput() {
         return
       }
       dispatch(setSelectedConversation(conv))
-
       dispatch(addConversation(conv))
       conversation = conv
     }
 
-    if (conversation.title == "New Chat") {
+    if (conversation.title === "New Chat") {
       const title = prompt.slice(0, 40)
-      dispatch(setConvTitle({ conversationId: conversation?._id, title }))
-      updateConversation({ id: conversation?._id, title }).catch(() => {})
+      dispatch(setConvTitle({ conversationId: conversation._id, title }))
+      updateConversation({ id: conversation._id, title }).catch(() => {})
     }
 
+    dispatch(addMessage({ role: "user", content: prompt }))
 
     const formData = new FormData()
     formData.append("prompt", prompt)
-    formData.append("conversationId", conversation?._id)
+    formData.append("conversationId", conversation._id)
     formData.append("agent", selectedAgent.toLowerCase())
     if (file) {
       formData.append("file", file)
     }
 
-
-    dispatch(addMessage({ role: "user", content: prompt }))
-    setValue("")
-    setSelectedFile(null)
-    const data = await sendMessage(formData)
-    dispatch(setIsLoading(false))
-    if (!data) return
-    dispatch(setArtifacts(data.artifacts || []))
-    dispatch(addMessage({ role: "assistant", content: data.answer, images: data.images }))
+    try {
+      const data = await sendMessage(formData)
+      if (data && data.answer) {
+        dispatch(setArtifacts(data.artifacts || []))
+        dispatch(addMessage({ role: "assistant", content: data.answer, images: data.images }))
+      } else {
+        dispatch(addMessage({ role: "assistant", content: "Failed to generate reply. Please try again." }))
+      }
+    } catch (err) {
+      console.error("Failed to send message", err)
+      dispatch(addMessage({ role: "assistant", content: "An error occurred while processing your message." }))
+    } finally {
+      dispatch(setIsLoading(false))
+    }
   }
+
 
   const agents = [
     {
@@ -167,7 +176,9 @@ function ChatInput() {
             const Icon = agent.icon
             return (
               <div
+                key={agent.id}
                 onClick={() => setSelectedAgent(agent.label)}
+
                 className={`
             flex-shrink-0
             cursor-pointer

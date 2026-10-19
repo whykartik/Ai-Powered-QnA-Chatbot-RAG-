@@ -26,6 +26,7 @@ console.log("Gateway Target Services Configuration:", {
 })
 
 const app = express()
+app.set("trust proxy", 1)
 
 const allowedOrigins = [
     process.env.FRONTEND_URL,
@@ -33,20 +34,40 @@ const allowedOrigins = [
     "http://127.0.0.1:5173"
 ].filter(Boolean)
 
-app.use(cors({
+const corsOptions = {
     origin: (origin, callback) => {
-        if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== "production") {
-            callback(null, true)
-            return
-        }
-        // Allow all origins if wildcard or fallback to log warning instead of crashing gateway
+        // Reflect origin so credentials (cookies) work smoothly across domains
         callback(null, true)
     },
-    credentials: true
-}))
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "Cookie", "X-Requested-With", "x-user-id"],
+    exposedHeaders: ["Set-Cookie"]
+}
+
+app.use(cors(corsOptions))
+
+// Intercept all OPTIONS preflight requests immediately so they are never proxied to downstream microservices
+app.use((req, res, next) => {
+    res.header("Access-Control-Allow-Origin", req.headers.origin || "*")
+    res.header("Access-Control-Allow-Credentials", "true")
+    res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS")
+    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, Cookie, X-Requested-With, x-user-id")
+    if (req.method === "OPTIONS") {
+        return res.sendStatus(204)
+    }
+    next()
+})
+
+app.use((req, res, next) => {
+    res.setHeader("Cross-Origin-Opener-Policy", "same-origin-allow-popups")
+    next()
+})
+
 
 app.use(morgan("dev"))
 app.use(cookieParser())
+
 
 // Health check endpoint for Render monitoring
 app.get("/health", (req, res) => {

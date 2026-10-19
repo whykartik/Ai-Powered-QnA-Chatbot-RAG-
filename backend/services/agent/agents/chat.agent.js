@@ -58,16 +58,19 @@ Answer the user using only the above search results.
         new SystemMessage(systemPrompt)
     ]
 
-    history.forEach(msg => {
-        if (msg.role == "user") {
-            messages.push(new HumanMessage(msg.content))
-        }
-        if (msg.role == "assistant") {
-            messages.push(new AIMessage(msg.content))
-        }
-    });
+    if (Array.isArray(history)) {
+        history.forEach(msg => {
+            if (msg.role == "user") {
+                messages.push(new HumanMessage(msg.content))
+            }
+            if (msg.role == "assistant") {
+                messages.push(new AIMessage(msg.content))
+            }
+        })
+    }
 
     messages.push(new HumanMessage(state.prompt))
+
 
 
 

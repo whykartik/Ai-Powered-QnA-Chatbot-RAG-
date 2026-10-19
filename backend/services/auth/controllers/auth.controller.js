@@ -39,18 +39,19 @@ export const login = async (req, res) => {
 
 
 
-        const isSecure = process.env.NODE_ENV === "production" || req.protocol === "https" || req.headers["x-forwarded-proto"] === "https"
+        const isHttps = req.protocol === "https" || req.headers["x-forwarded-proto"] === "https" || process.env.NODE_ENV === "production" || !req.hostname.includes("localhost")
         res.cookie("session", sessionId, {
             httpOnly: true,
-            secure: isSecure,
-            sameSite: isSecure ? "none" : "lax",
+            secure: isHttps,
+            sameSite: isHttps ? "none" : "lax",
+            path: "/",
             maxAge: 7 * 24 * 60 * 60 * 1000
         })
 
         return res.status(200).json(user)
 
     } catch (error) {
-        return res.status(500).json({ message: `login error ${error}` })
+        return res.status(500).json({ message: `login error ${error?.message || error}` })
     }
 }
 
@@ -58,14 +59,23 @@ export const login = async (req, res) => {
 export const logOut = async (req, res) => {
     try {
         const sessionId = req.cookies?.session
-        await redis.del(`session-${sessionId}`)
+        if (sessionId) {
+            await redis.del(`session-${sessionId}`)
+        }
 
-        res.clearCookie("session")
+        const isHttps = req.protocol === "https" || req.headers["x-forwarded-proto"] === "https" || process.env.NODE_ENV === "production" || !req.hostname.includes("localhost")
+        res.clearCookie("session", {
+            httpOnly: true,
+            secure: isHttps,
+            sameSite: isHttps ? "none" : "lax",
+            path: "/"
+        })
         return res.status(200).json({ message: "logout successfully" })
     } catch (error) {
-        return res.status(500).json({ message: `logout error ${error}` })
+        return res.status(500).json({ message: `logout error ${error?.message || error}` })
     }
 }
+
 
 
 export const deductCredits = async (req, res) => {

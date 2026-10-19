@@ -1,50 +1,82 @@
 import Redis from "ioredis"
+import fs from "node:fs"
+import path from "node:path"
+import { fileURLToPath } from "node:url"
 
-const fallbackStore = new Map()
-const fallbackExpiry = new Map()
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const fallbackFile = path.join(__dirname, ".fallback-redis.json")
+
+const loadFallback = () => {
+  try {
+    if (fs.existsSync(fallbackFile)) {
+      const data = JSON.parse(fs.readFileSync(fallbackFile, "utf-8"))
+      return {
+        store: new Map(Object.entries(data.store || {})),
+        expiry: new Map(Object.entries(data.expiry || {}))
+      }
+    }
+  } catch (e) {}
+  return { store: new Map(), expiry: new Map() }
+}
+
+const saveFallback = (store, expiry) => {
+  try {
+    const data = {
+      store: Object.fromEntries(store),
+      expiry: Object.fromEntries(expiry)
+    }
+    fs.writeFileSync(fallbackFile, JSON.stringify(data), "utf-8")
+  } catch (e) {}
+}
+
 const redis = new Redis(process.env.REDIS_URL || "redis://localhost:6379", {
   lazyConnect: true,
-  maxRetriesPerRequest: 3
+  maxRetriesPerRequest: 1,
+  retryStrategy: () => null
 })
 
-const getExpiry = (key) => fallbackExpiry.get(key) ?? null
-
-const isExpired = (key) => {
-  const expiry = getExpiry(key)
-  if (expiry === null) return false
-  if (Date.now() > expiry) {
-    fallbackStore.delete(key)
-    fallbackExpiry.delete(key)
+const isExpired = (key, expiryMap, storeMap) => {
+  const expiry = expiryMap.get(key)
+  if (expiry === undefined || expiry === null) return false
+  if (Date.now() > Number(expiry)) {
+    storeMap.delete(key)
+    expiryMap.delete(key)
     return true
   }
   return false
 }
 
 const fallbackGet = async (key) => {
-  if (fallbackStore.has(key) && !isExpired(key)) {
-    return fallbackStore.get(key)
+  const { store, expiry } = loadFallback()
+  if (store.has(key) && !isExpired(key, expiry, store)) {
+    return store.get(key)
   }
   return null
 }
 
 const fallbackSet = async (key, value, ...args) => {
+  const { store, expiry } = loadFallback()
   const expiryIndex = args.findIndex((arg) => arg === "EX" || arg === "PX")
   if (expiryIndex !== -1) {
     const expiryValue = Number(args[expiryIndex + 1])
     if (!Number.isNaN(expiryValue)) {
       const ms = args[expiryIndex] === "PX" ? expiryValue : expiryValue * 1000
-      fallbackExpiry.set(key, Date.now() + ms)
+      expiry.set(key, Date.now() + ms)
     }
   } else {
-    fallbackExpiry.delete(key)
+    expiry.delete(key)
   }
-  fallbackStore.set(key, value)
+  store.set(key, value)
+  saveFallback(store, expiry)
   return "OK"
 }
 
 const fallbackDel = async (key) => {
-  fallbackExpiry.delete(key)
-  return fallbackStore.delete(key) ? 1 : 0
+  const { store, expiry } = loadFallback()
+  expiry.delete(key)
+  const deleted = store.delete(key)
+  saveFallback(store, expiry)
+  return deleted ? 1 : 0
 }
 
 const fallbackIncr = async (key) => {
@@ -55,17 +87,26 @@ const fallbackIncr = async (key) => {
 }
 
 const fallbackExpire = async (key, seconds) => {
-  const currentValue = await fallbackGet(key)
-  if (currentValue === null) return 0
-  fallbackExpiry.set(key, Date.now() + Number(seconds) * 1000)
+  const { store, expiry } = loadFallback()
+  const currentValue = store.get(key)
+  if (!currentValue) return 0
+  expiry.set(key, Date.now() + Number(seconds) * 1000)
+  saveFallback(store, expiry)
   return 1
 }
 
 const fallbackTtl = async (key) => {
-  const expiry = getExpiry(key)
-  if (expiry === null) return -1
-  const remaining = Math.ceil((expiry - Date.now()) / 1000)
+  const { store, expiry } = loadFallback()
+  if (!store.has(key)) return -2
+  const exp = expiry.get(key)
+  if (!exp) return -1
+  const remaining = Math.ceil((Number(exp) - Date.now()) / 1000)
   return remaining > 0 ? remaining : -2
+}
+
+const fallbackExists = async (key) => {
+  const val = await fallbackGet(key)
+  return val !== null ? 1 : 0
 }
 
 const originalGet = redis.get.bind(redis)
@@ -74,6 +115,7 @@ const originalDel = redis.del.bind(redis)
 const originalIncr = redis.incr.bind(redis)
 const originalExpire = redis.expire.bind(redis)
 const originalTtl = redis.ttl.bind(redis)
+const originalExists = redis.exists.bind(redis)
 
 redis.get = async (...args) => {
   try {
@@ -123,12 +165,20 @@ redis.ttl = async (...args) => {
   }
 }
 
+redis.exists = async (...args) => {
+  try {
+    return await originalExists(...args)
+  } catch (error) {
+    return fallbackExists(...args)
+  }
+}
+
 redis.on("connect", () => {
   console.log("redis connected")
 })
 
 redis.on("error", (error) => {
-  console.warn("Redis unavailable, using in-memory fallback:", error.message)
+  // Graceful fallback
 })
 
 export default redis
