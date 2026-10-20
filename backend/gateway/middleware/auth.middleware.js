@@ -18,5 +18,21 @@ const protect=async (req,res,next) => {
     }
 }
 
+export const optionalAuth = async (req, res, next) => {
+    try {
+        const sessionId = req.cookies?.session
+        if (!sessionId) {
+            return next()
+        }
+
+        const session = await redis.get(`session-${sessionId}`)
+        if (session) {
+            req.user = JSON.parse(session)
+        }
+        return next()
+    } catch (error) {
+        return res.status(500).json({ message: `session lookup error ${error?.message || error}` })
+    }
+}
 
 export default protect

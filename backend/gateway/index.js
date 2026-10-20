@@ -4,7 +4,7 @@ import proxy from "express-http-proxy"
 import cors from "cors"
 import cookieParser from "cookie-parser"
 import { getCurrentUser } from "./controllers/user.controller.js"
-import protect from "./middleware/auth.middleware.js"
+import protect, { optionalAuth } from "./middleware/auth.middleware.js"
 import { proxyWithHeader } from "./utils/proxyWithHeader.js"
 import morgan from "morgan"
 
@@ -81,7 +81,7 @@ app.get("/", (req, res) => {
 app.use("/api/auth", proxyWithHeader(AUTH_SERVICE))
 app.use("/api/chat", protect, proxyWithHeader(CHAT_SERVICE))
 app.use("/api/agent", protect, proxyWithHeader(AGENT_SERVICE))
-app.get("/api/me", protect, getCurrentUser)
+app.get("/api/me", optionalAuth, getCurrentUser)
 
 const server = app.listen(port, "0.0.0.0", () => {
     console.log(`gateway started at port ${port}`)
